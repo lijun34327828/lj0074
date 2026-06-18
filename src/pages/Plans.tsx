@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useCallback } from 'react'
 import { useStore } from '@/store/useAppStore'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, Legend, CartesianGrid } from 'recharts'
 import { Sparkles, ArrowUpDown, ChevronDown, Trophy, TrendingUp, DollarSign, Layers, RefreshCw, BarChart3 } from 'lucide-react'
@@ -23,13 +23,21 @@ export default function Plans() {
     }
   }, [])
 
+  const getUnitProfit = useCallback((plan: typeof plans[0]) => {
+    const totalDetailProfit = plan.profitDetails.reduce((sum, d) => sum + d.profit, 0)
+    return Math.round((totalDetailProfit / plan.products.length) * 100) / 100
+  }, [])
+
   const sortedPlans = useMemo(() => {
     const sorted = [...plans].sort((a, b) => {
       const mul = sortDirection === 'desc' ? -1 : 1
+      if (sortField === 'unitProfit') {
+        return (getUnitProfit(a) - getUnitProfit(b)) * mul
+      }
       return (a[sortField] - b[sortField]) * mul
     })
     return sorted
-  }, [plans, sortField, sortDirection])
+  }, [plans, sortField, sortDirection, getUnitProfit])
 
   const stats = useMemo(() => {
     if (plans.length === 0) return null
@@ -56,7 +64,7 @@ export default function Plans() {
     field,
     label,
   }: {
-    field: 'profitRate' | 'totalProfit' | 'totalSellPrice'
+    field: 'profitRate' | 'totalProfit' | 'totalSellPrice' | 'unitProfit'
     label: string
   }) => (
     <button
@@ -274,7 +282,7 @@ export default function Plans() {
               </div>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[950px]">
+              <table className="w-full min-w-[1080px]">
                 <thead>
                   <tr className="bg-[#F8F8F5]">
                     <th className="text-left text-xs font-medium text-gray-500 px-5 py-3.5 w-12">排名</th>
@@ -285,6 +293,9 @@ export default function Plans() {
                     <th className="text-right text-xs font-medium text-gray-500 px-5 py-3.5">总成本</th>
                     <th className="text-right text-xs font-medium text-gray-500 px-5 py-3.5">
                       <SortHeader field="totalProfit" label="总毛利" />
+                    </th>
+                    <th className="text-right text-xs font-medium text-gray-500 px-5 py-3.5">
+                      <SortHeader field="unitProfit" label="单件毛利" />
                     </th>
                     <th className="text-right text-xs font-medium text-gray-500 px-5 py-3.5 w-40">
                       <SortHeader field="profitRate" label="毛利率" />
@@ -360,6 +371,15 @@ export default function Plans() {
                             }`}
                           >
                             ¥{plan.totalProfit.toFixed(2)}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4 text-right">
+                          <span
+                            className={`text-sm font-mono font-medium ${
+                              isLowProfit ? 'text-[#E63946]' : 'text-[#1B4332]'
+                            }`}
+                          >
+                            ¥{getUnitProfit(plan).toFixed(2)}
                           </span>
                         </td>
                         <td className="px-5 py-4">

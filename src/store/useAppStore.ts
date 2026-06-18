@@ -6,7 +6,7 @@ interface AppState {
   plans: BundlePlan[]
   settings: Settings
   loading: boolean
-  sortField: 'profitRate' | 'totalProfit' | 'totalSellPrice'
+  sortField: 'profitRate' | 'totalProfit' | 'totalSellPrice' | 'unitProfit'
   sortDirection: 'asc' | 'desc'
 
   fetchProducts: () => Promise<void>
@@ -20,7 +20,7 @@ interface AppState {
   fetchSettings: () => Promise<void>
   updateSettings: (data: Partial<Settings>) => Promise<void>
 
-  setSortField: (field: 'profitRate' | 'totalProfit' | 'totalSellPrice') => void
+  setSortField: (field: 'profitRate' | 'totalProfit' | 'totalSellPrice' | 'unitProfit') => void
   toggleSortDirection: () => void
 }
 
