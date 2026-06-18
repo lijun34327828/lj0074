@@ -130,6 +130,17 @@ export default function Settings() {
             color="#1B4332"
           />
 
+          <SliderControl
+            label="套餐折扣率"
+            value={settings.bundleDiscountRate}
+            min={0}
+            max={100}
+            step={1}
+            onChange={(v) => handleChange('bundleDiscountRate', v)}
+            unit="%"
+            color="#D4A843"
+          />
+
           <div className="pt-2">
             <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
               <div className="flex-1">
@@ -223,15 +234,15 @@ export default function Settings() {
             </p>
           </div>
           <div className="bg-white/10 rounded-xl p-4 backdrop-blur-sm">
-            <p className="text-xs text-white/50">毛利率告警线</p>
+            <p className="text-xs text-white/50">套餐折扣率</p>
             <p className="text-xl font-bold font-mono mt-1.5 text-[#D4A843]">
-              {(settings.profitThreshold * 100).toFixed(0)}%
+              {settings.bundleDiscountRate.toFixed(0)}%
             </p>
           </div>
           <div className="bg-white/10 rounded-xl p-4 backdrop-blur-sm">
-            <p className="text-xs text-white/50">AI 计算引擎</p>
-            <p className="text-xl font-bold mt-1.5">
-              :8844
+            <p className="text-xs text-white/50">毛利率告警线</p>
+            <p className="text-xl font-bold font-mono mt-1.5">
+              {(settings.profitThreshold * 100).toFixed(0)}%
             </p>
           </div>
         </div>

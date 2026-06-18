@@ -21,6 +21,10 @@ export interface BundlePlan {
   totalSellPrice: number
   totalProfit: number
   profitRate: number
+  discountedSellPrice: number
+  discountedProfit: number
+  discountedProfitRate: number
+  discountAmount: number
   profitDetails: ProfitDetail[]
 }
 
@@ -29,4 +33,5 @@ export interface Settings {
   maxItems: number
   allowDuplicate: boolean
   profitThreshold: number
+  bundleDiscountRate: number
 }

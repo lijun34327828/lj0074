@@ -7,7 +7,7 @@ let cachedPlans: BundlePlan[] = []
 const router = Router()
 
 router.post('/generate', (req: Request, res: Response) => {
-  const { minItems, maxItems, allowDuplicate, profitThreshold } = req.body
+  const { minItems, maxItems, allowDuplicate, profitThreshold, bundleDiscountRate } = req.body
   const products = store.getAllProducts()
 
   if (products.length < 2) {
@@ -19,11 +19,12 @@ router.post('/generate', (req: Request, res: Response) => {
   const max = Number(maxItems) || Math.min(products.length, 5)
   const dup = Boolean(allowDuplicate)
   const threshold = profitThreshold != null ? Number(profitThreshold) : 0
+  const discount = bundleDiscountRate != null ? Number(bundleDiscountRate) : 0
 
-  cachedPlans = store.generateBundlePlans(products, min, max, dup)
+  cachedPlans = store.generateBundlePlans(products, min, max, dup, discount)
 
   if (threshold > 0) {
-    cachedPlans = cachedPlans.filter((p) => p.profitRate >= threshold)
+    cachedPlans = cachedPlans.filter((p) => p.discountedProfitRate >= threshold)
   }
 
   res.json(cachedPlans)

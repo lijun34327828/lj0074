@@ -32,6 +32,7 @@ export const useStore = create<AppState>((set, get) => ({
     maxItems: 5,
     allowDuplicate: false,
     profitThreshold: 0.15,
+    bundleDiscountRate: 0,
   },
   loading: false,
   sortField: 'profitRate',

@@ -35,12 +35,14 @@ export function generateBundlePlans(
   productList: Product[],
   minItems: number,
   maxItems: number,
-  allowDuplicate: boolean
+  allowDuplicate: boolean,
+  bundleDiscountRate: number = 0
 ): BundlePlan[] {
   const plans: BundlePlan[] = []
 
   const effectiveMin = Math.max(2, minItems)
   const effectiveMax = Math.min(productList.length, maxItems)
+  const discountRate = Math.max(0, Math.min(100, bundleDiscountRate)) / 100
 
   for (let k = effectiveMin; k <= effectiveMax; k++) {
     const combos = allowDuplicate
@@ -52,6 +54,11 @@ export function generateBundlePlans(
       const totalSellPrice = combo.reduce((s, p) => s + p.sellPrice, 0)
       const totalProfit = totalSellPrice - totalCost
       const profitRate = totalSellPrice > 0 ? totalProfit / totalSellPrice : 0
+
+      const discountedSellPrice = totalSellPrice * (1 - discountRate)
+      const discountedProfit = discountedSellPrice - totalCost
+      const discountedProfitRate = discountedSellPrice > 0 ? discountedProfit / discountedSellPrice : 0
+      const discountAmount = totalSellPrice - discountedSellPrice
 
       const profitDetails: ProfitDetail[] = combo.map((p) => ({
         productId: p.id,
@@ -69,12 +76,16 @@ export function generateBundlePlans(
         totalSellPrice: Math.round(totalSellPrice * 100) / 100,
         totalProfit: Math.round(totalProfit * 100) / 100,
         profitRate: Math.round(profitRate * 10000) / 10000,
+        discountedSellPrice: Math.round(discountedSellPrice * 100) / 100,
+        discountedProfit: Math.round(discountedProfit * 100) / 100,
+        discountedProfitRate: Math.round(discountedProfitRate * 10000) / 10000,
+        discountAmount: Math.round(discountAmount * 100) / 100,
         profitDetails,
       })
     }
   }
 
-  plans.sort((a, b) => b.profitRate - a.profitRate)
+  plans.sort((a, b) => b.discountedProfitRate - a.discountedProfitRate)
 
   return plans
 }

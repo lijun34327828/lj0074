@@ -15,6 +15,8 @@ export default function Plans() {
     setSortField,
   } = useStore()
 
+  const isDiscounted = settings.bundleDiscountRate > 0
+
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null)
 
   useEffect(() => {
@@ -24,36 +26,47 @@ export default function Plans() {
   }, [])
 
   const getUnitProfit = useCallback((plan: typeof plans[0]) => {
-    const totalDetailProfit = plan.profitDetails.reduce((sum, d) => sum + d.profit, 0)
-    return Math.round((totalDetailProfit / plan.products.length) * 100) / 100
+    return Math.round((plan.discountedProfit / plan.products.length) * 100) / 100
   }, [])
+
+  const getSortValue = useCallback((plan: typeof plans[0], field: string) => {
+    switch (field) {
+      case 'profitRate':
+        return plan.discountedProfitRate
+      case 'totalProfit':
+        return plan.discountedProfit
+      case 'totalSellPrice':
+        return plan.discountedSellPrice
+      case 'unitProfit':
+        return getUnitProfit(plan)
+      default:
+        return plan[field as keyof typeof plan] as number
+    }
+  }, [getUnitProfit])
 
   const sortedPlans = useMemo(() => {
     const sorted = [...plans].sort((a, b) => {
       const mul = sortDirection === 'desc' ? -1 : 1
-      if (sortField === 'unitProfit') {
-        return (getUnitProfit(a) - getUnitProfit(b)) * mul
-      }
-      return (a[sortField] - b[sortField]) * mul
+      return (getSortValue(a, sortField) - getSortValue(b, sortField)) * mul
     })
     return sorted
-  }, [plans, sortField, sortDirection, getUnitProfit])
+  }, [plans, sortField, sortDirection, getSortValue])
 
   const stats = useMemo(() => {
     if (plans.length === 0) return null
-    const bestProfitRate = Math.max(...plans.map(p => p.profitRate))
-    const bestProfit = Math.max(...plans.map(p => p.totalProfit))
-    const avgProfitRate = plans.reduce((s, p) => s + p.profitRate, 0) / plans.length
-    const highQualityCount = plans.filter(p => p.profitRate >= settings.profitThreshold).length
+    const bestProfitRate = Math.max(...plans.map(p => p.discountedProfitRate))
+    const bestProfit = Math.max(...plans.map(p => p.discountedProfit))
+    const avgProfitRate = plans.reduce((s, p) => s + p.discountedProfitRate, 0) / plans.length
+    const highQualityCount = plans.filter(p => p.discountedProfitRate >= settings.profitThreshold).length
     return { bestProfitRate, bestProfit, avgProfitRate, highQualityCount, total: plans.length }
   }, [plans, settings.profitThreshold])
 
   const chartData = useMemo(() => {
     return sortedPlans.slice(0, 15).map((p, i) => ({
       name: `方案${i + 1}`,
-      profitRate: Math.round(p.profitRate * 10000) / 100,
-      totalProfit: p.totalProfit,
-      totalSellPrice: p.totalSellPrice,
+      profitRate: Math.round(p.discountedProfitRate * 10000) / 100,
+      totalProfit: p.discountedProfit,
+      totalSellPrice: p.discountedSellPrice,
       totalCost: p.totalCost,
       products: p.products.map((pr) => pr.name).join(' + '),
       id: p.id,
@@ -282,14 +295,18 @@ export default function Plans() {
               </div>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[1080px]">
+              <table className="w-full min-w-[1380px]">
                 <thead>
                   <tr className="bg-[#F8F8F5]">
                     <th className="text-left text-xs font-medium text-gray-500 px-5 py-3.5 w-12">排名</th>
                     <th className="text-left text-xs font-medium text-gray-500 px-5 py-3.5">组合商品</th>
                     <th className="text-right text-xs font-medium text-gray-500 px-5 py-3.5">
-                      <SortHeader field="totalSellPrice" label="总售价" />
+                      <SortHeader field="totalSellPrice" label="原价合计" />
                     </th>
+                    <th className="text-right text-xs font-medium text-gray-500 px-5 py-3.5">
+                      <SortHeader field="totalSellPrice" label="折后套餐价" />
+                    </th>
+                    <th className="text-right text-xs font-medium text-gray-500 px-5 py-3.5">让利金额</th>
                     <th className="text-right text-xs font-medium text-gray-500 px-5 py-3.5">总成本</th>
                     <th className="text-right text-xs font-medium text-gray-500 px-5 py-3.5">
                       <SortHeader field="totalProfit" label="总毛利" />
@@ -304,7 +321,7 @@ export default function Plans() {
                 </thead>
                 <tbody>
                   {sortedPlans.map((plan, i) => {
-                    const isLowProfit = plan.profitRate < settings.profitThreshold
+                    const isLowProfit = plan.discountedProfitRate < settings.profitThreshold
                     const isSelected = selectedPlan === plan.id
                     const isTop3 = i < 3
 
@@ -355,8 +372,18 @@ export default function Plans() {
                           )}
                         </td>
                         <td className="px-5 py-4 text-right">
-                          <span className="text-sm font-mono text-gray-700 font-medium">
+                          <span className="text-sm font-mono text-gray-400 line-through">
                             ¥{plan.totalSellPrice.toFixed(2)}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4 text-right">
+                          <span className="text-sm font-mono text-gray-700 font-medium">
+                            ¥{plan.discountedSellPrice.toFixed(2)}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4 text-right">
+                          <span className="text-sm font-mono text-[#D4A843] font-medium">
+                            -¥{plan.discountAmount.toFixed(2)}
                           </span>
                         </td>
                         <td className="px-5 py-4 text-right">
@@ -370,7 +397,7 @@ export default function Plans() {
                               isLowProfit ? 'text-[#E63946]' : 'text-[#1B4332]'
                             }`}
                           >
-                            ¥{plan.totalProfit.toFixed(2)}
+                            ¥{plan.discountedProfit.toFixed(2)}
                           </span>
                         </td>
                         <td className="px-5 py-4 text-right">
@@ -388,7 +415,7 @@ export default function Plans() {
                               <div
                                 className="h-full rounded-full transition-all duration-500"
                                 style={{
-                                  width: `${Math.min(100, plan.profitRate * 100)}%`,
+                                  width: `${Math.min(100, plan.discountedProfitRate * 100)}%`,
                                   backgroundColor: isLowProfit ? '#E63946' : '#1B4332',
                                 }}
                               />
@@ -398,7 +425,7 @@ export default function Plans() {
                                 isLowProfit ? 'text-[#E63946]' : 'text-[#1B4332]'
                               }`}
                             >
-                              {(plan.profitRate * 100).toFixed(1)}%
+                              {(plan.discountedProfitRate * 100).toFixed(1)}%
                             </span>
                           </div>
                         </td>
